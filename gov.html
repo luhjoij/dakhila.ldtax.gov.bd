@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF থেকে QR কোড জেনারেটর</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            color: #333;
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 0;
+            color: white;
+        }
+        
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        header p {
+            font-size: 1.2rem;
+            max-width: 700px;
+            margin: 0 auto;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-top: 20px;
+        }
+        
+        .upload-section, .qr-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .upload-section {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .qr-section {
+            text-align: center;
+        }
+        
+        .upload-area {
+            border: 3px dashed #6a11cb;
+            border-radius: 10px;
+            padding: 40px 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .upload-area:hover {
+            background-color: #f5f5ff;
+        }
+        
+        .upload-area i {
+            font-size: 50px;
+            color: #6a11cb;
+            margin-bottom: 15px;
+        }
+        
+        .upload-area h3 {
+            margin-bottom: 10px;
+            color: #6a11cb;
+        }
+        
+        .upload-area p {
+            color: #666;
+            margin-bottom: 15px;
+        }
+        
+        .btn {
+            background: #6a11cb;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 50px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            display: inline-block;
+            margin: 5px;
+        }
+        
+        .btn:hover {
+            background: #2575fc;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-secondary {
+            background: #2575fc;
+        }
+        
+        .btn-success {
+            background: #28a745;
+        }
+        
+        #fileInput {
+            display: none;
+        }
+        
+        .file-info {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            display: none;
+        }
+        
+        #qrcode {
+            margin: 20px auto;
+            display: inline-block;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .folder-info {
+            background: #e8f4ff;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            border-left: 4px solid #2575fc;
+        }
+        
+        .instructions {
+            margin-top: 30px;
+            background: #f9f9ff;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 5px solid #6a11cb;
+        }
+        
+        .instructions h3 {
+            color: #6a11cb;
+            margin-bottom: 15px;
+        }
+        
+        .instructions ol {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 10px;
+        }
+        
+        .uploaded-files {
+            margin-top: 20px;
+            background: #f9f9ff;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .uploaded-files h3 {
+            color: #6a11cb;
+            margin-bottom: 15px;
+        }
+        
+        .file-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .file-item:last-child {
+            border-bottom: none;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            color: white;
+            opacity: 0.8;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            margin-top: 10px;
+            overflow: hidden;
+            display: none;
+        }
+        
+        .progress {
+            height: 100%;
+            background: #6a11cb;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>PDF থেকে QR কোড জেনারেটর</h1>
+            <p>আপনার PDF আপলোড করুন, অটোমেটিক ফোল্ডার তৈরি হবে এবং QR কোড পাবেন</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="upload-section">
+                <div class="upload-area" id="uploadArea">
+                    <i>📁</i>
+                    <h3>PDF ফাইল আপলোড করুন</h3>
+                    <p>এখানে ক্লিক করুন বা PDF ফাইলটি ড্র্যাগ করুন</p>
+                    <button class="btn" id="uploadBtn">PDF নির্বাচন করুন</button>
+                    <input type="file" id="fileInput" accept=".pdf">
+                    <div class="progress-bar" id="progressBar">
+                        <div class="progress" id="progress"></div>
+                    </div>
+                </div>
+                
+                <div class="file-info" id="fileInfo">
+                    <p><strong>ফাইল নাম:</strong> <span id="fileName"></span></p>
+                    <p><strong>ফাইলের আকার:</strong> <span id="fileSize"></span></p>
+                    <p><strong>ফোল্ডার:</strong> <span id="folderName"></span></p>
+                </div>
+                
+                <div class="folder-info" id="folderInfo" style="display: none;">
+                    <h3>ফোল্ডার তৈরি হয়েছে!</h3>
+                    <p>আপনার PDF সংরক্ষিত হয়েছে: <strong id="currentFolder"></strong></p>
+                </div>
+                
+                <div class="uploaded-files">
+                    <h3>আপলোডকৃত ফাইলসমূহ</h3>
+                    <div class="file-list" id="fileList">
+                        <p id="noFiles">কোন ফাইল আপলোড করা হয়নি</p>
+                    </div>
+                </div>
+                
+                <div class="instructions">
+                    <h3>কিভাবে ব্যবহার করবেন:</h3>
+                    <ol>
+                        <li>উপরের বাটনে ক্লিক করে আপনার PDF ফাইল নির্বাচন করুন</li>
+                        <li>PDF আপলোড হয়ে গেলে অটোমেটিকভাবে ফোল্ডার তৈরি হবে</li>
+                        <li>স্বয়ংক্রিয়ভাবে QR কোড তৈরি হবে</li>
+                        <li>QR কোডটি ডাউনলোড করুন বা সরাসরি স্ক্যান করুন</li>
+                        <li>QR কোড স্ক্যান করলে সরাসরি আপনার PDF ওপেন হবে</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <div class="qr-section">
+                <h2>আপনার QR কোড</h2>
+                <p>এই QR কোডটি স্ক্যান করে সরাসরি PDF দেখুন</p>
+                
+                <div id="qrcode"></div>
+                
+                <p id="qrMessage">PDF আপলোড করার পর QR কোড দেখানো হবে</p>
+                
+                <button class="btn" id="downloadBtn" style="display: none;">QR কোড ডাউনলোড করুন</button>
+                <button class="btn btn-secondary" id="viewPdfBtn" style="display: none;">PDF দেখুন</button>
+                <button class="btn btn-success" id="shareBtn" style="display: none;">লিঙ্ক শেয়ার করুন</button>
+            </div>
+        </div>
+        
+        <footer>
+            <p>© 2023 PDF থেকে QR কোড জেনারেটর | অটোমেটিক ফোল্ডার সিস্টেম</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('fileInput');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const uploadArea = document.getElementById('uploadArea');
+            const fileInfo = document.getElementById('fileInfo');
+            const fileName = document.getElementById('fileName');
+            const fileSize = document.getElementById('fileSize');
+            const folderName = document.getElementById('folderName');
+            const folderInfo = document.getElementById('folderInfo');
+            const currentFolder = document.getElementById('currentFolder');
+            const qrMessage = document.getElementById('qrMessage');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const viewPdfBtn = document.getElementById('viewPdfBtn');
+            const shareBtn = document.getElementById('shareBtn');
+            const progressBar = document.getElementById('progressBar');
+            const progress = document.getElementById('progress');
+            const fileList = document.getElementById('fileList');
+            const noFiles = document.getElementById('noFiles');
+            
+            let qrcode = null;
+            let uploadedFile = null;
+            let currentFolderName = '';
+            let uploadedFiles = JSON.parse(localStorage.getItem('uploadedFiles')) || [];
+            
+            // QR কোড জেনারেটরের জন্য এলিমেন্ট
+            const qrContainer = document.getElementById('qrcode');
+            
+            // আপলোড করা ফাইল লিস্ট আপডেট করুন
+            updateFileList();
+            
+            // ফাইল আপলোড বাটনে ক্লিক করলে
+            uploadBtn.addEventListener('click', function() {
+                fileInput.click();
+            });
+            
+            // ড্র্যাগ এন্ড ড্রপ ফাংশনালিটি
+            uploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                uploadArea.style.backgroundColor = '#f0f0ff';
+            });
+            
+            uploadArea.addEventListener('dragleave', function() {
+                uploadArea.style.backgroundColor = '';
+            });
+            
+            uploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                uploadArea.style.backgroundColor = '';
+                
+                if (e.dataTransfer.files.length) {
+                    handleFile(e.dataTransfer.files[0]);
+                }
+            });
+            
+            // ফাইল নির্বাচন করলে
+            fileInput.addEventListener('change', function() {
+                if (fileInput.files.length) {
+                    handleFile(fileInput.files[0]);
+                }
+            });
+            
+            // ফাইল হ্যান্ডলিং ফাংশন
+            function handleFile(file) {
+                // শুধুমাত্র PDF ফাইল গ্রহণ করুন
+                if (file.type !== 'application/pdf') {
+                    alert('দুঃখিত, শুধুমাত্র PDF ফাইল আপলোড করা যাবে।');
+                    return;
+                }
+                
+                // ফাইল সংরক্ষণ করুন
+                uploadedFile = file;
+                
+                // ফাইল তথ্য দেখান
+                fileName.textContent = file.name;
+                fileSize.textContent = formatFileSize(file.size);
+                
+                // ফোল্ডার তৈরি করুন
+                createFolder(file);
+                
+                // ফাইল আপলোড করুন
+                uploadFile(file);
+            }
+            
+            // ফোল্ডার তৈরি করা
+            function createFolder(file) {
+                // তারিখ এবং সময় অনুযায়ী ফোল্ডার নাম তৈরি করুন
+                const now = new Date();
+                const folderId = 'pdf_' + now.getFullYear() + 
+                                '_' + (now.getMonth() + 1) + 
+                                '_' + now.getDate() + 
+                                '_' + now.getHours() + 
+                                '_' + now.getMinutes() + 
+                                '_' + now.getSeconds();
+                
+                currentFolderName = folderId;
+                folderName.textContent = folderId;
+                currentFolder.textContent = folderId;
+                
+                // ফোল্ডার তথ্য দেখান
+                folderInfo.style.display = 'block';
+                fileInfo.style.display = 'block';
+            }
+            
+            // ফাইল আপলোড
+            function uploadFile(file) {
+                // প্রগ্রেস বার দেখান
+                progressBar.style.display = 'block';
+                progress.style.width = '0%';
+                
+                // লোডিং ইফেক্ট দেখান
+                uploadBtn.textContent = 'আপলোড হচ্ছে...';
+                uploadBtn.disabled = true;
+                
+                // প্রগ্রেস বার আপডেট করুন
+                let progressValue = 0;
+                const progressInterval = setInterval(() => {
+                    progressValue += 5;
+                    progress.style.width = progressValue + '%';
+                    
+                    if (progressValue >= 100) {
+                        clearInterval(progressInterval);
+                        
+                        // আপলোড সম্পূর্ণ
+                        setTimeout(function() {
+                            uploadBtn.textContent = 'PDF নির্বাচন করুন';
+                            uploadBtn.disabled = false;
+                            progressBar.style.display = 'none';
+                            
+                            // ফাইল সেভ করুন
+                            saveFile(file);
+                            
+                            // QR কোড জেনারেট করুন
+                            generateQRCode(file);
+                        }, 500);
+                    }
+                }, 100);
+            }
+            
+            // ফাইল সেভ করা
+            function saveFile(file) {
+                const fileData = {
+                    id: Date.now(),
+                    name: file.name,
+                    size: file.size,
+                    folder: currentFolderName,
+                    url: URL.createObjectURL(file),
+                    uploadDate: new Date().toLocaleString()
+                };
+                
+                uploadedFiles.push(fileData);
+                localStorage.setItem('uploadedFiles', JSON.stringify(uploadedFiles));
+                
+                updateFileList();
+            }
+            
+            // ফাইল লিস্ট আপডেট করা
+            function updateFileList() {
+                if (uploadedFiles.length === 0) {
+                    noFiles.style.display = 'block';
+                    fileList.innerHTML = '';
+                    fileList.appendChild(noFiles);
+                    return;
+                }
+                
+                noFiles.style.display = 'none';
+                fileList.innerHTML = '';
+                
+                uploadedFiles.forEach(file => {
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'file-item';
+                    fileItem.innerHTML = `
+                        <div>
+                            <strong>${file.name}</strong><br>
+                            <small>${file.folder} | ${file.uploadDate}</small>
+                        </div>
+                        <div>
+                            <button class="btn" onclick="viewFile('${file.id}')">দেখুন</button>
+                        </div>
+                    `;
+                    fileList.appendChild(fileItem);
+                });
+            }
+            
+            // ফাইল দেখা
+            window.viewFile = function(fileId) {
+                const file = uploadedFiles.find(f => f.id == fileId);
+                if (file) {
+                    window.open(file.url, '_blank');
+                }
+            };
+            
+            // ফাইলের আকার ফরম্যাট করা
+            function formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+            
+            // QR কোড জেনারেট করা
+            function generateQRCode(file) {
+                // পূর্বের QR কোড মুছে ফেলুন
+                qrContainer.innerHTML = '';
+                qrMessage.textContent = 'আপনার PDF এর QR কোড:';
+                
+                // ফাইল URL তৈরি করুন
+                const fileUrl = URL.createObjectURL(file);
+                
+                // নতুন QR কোড তৈরি করুন
+                qrcode = new QRCode(qrContainer, {
+                    text: fileUrl,
+                    width: 200,
+                    height: 200,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+                
+                // বাটন দেখান
+                downloadBtn.style.display = 'inline-block';
+                viewPdfBtn.style.display = 'inline-block';
+                shareBtn.style.display = 'inline-block';
+                
+                // ডাউনলোড বাটনে ইভেন্ট লিসেনার যোগ করুন
+                downloadBtn.onclick = function() {
+                    downloadQRCode();
+                };
+                
+                // PDF দেখুন বাটনে ইভেন্ট লিসেনার যোগ করুন
+                viewPdfBtn.onclick = function() {
+                    window.open(fileUrl, '_blank');
+                };
+                
+                // শেয়ার বাটনে ইভেন্ট লিসেনার যোগ করুন
+                shareBtn.onclick = function() {
+                    shareLink(fileUrl);
+                };
+            }
+            
+            // QR কোড ডাউনলোড করা
+            function downloadQRCode() {
+                const canvas = qrContainer.querySelector('canvas');
+                if (canvas) {
+                    const link = document.createElement('a');
+                    link.download = 'pdf-qr-code.png';
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                }
+            }
+            
+            // লিঙ্ক শেয়ার করা
+            function shareLink(url) {
+                if (navigator.share) {
+                    navigator.share({
+                        title: 'PDF ফাইল',
+                        text: 'এই PDF ফাইলটি দেখুন',
+                        url: url
+                    });
+                } else {
+                    // Fallback: ক্লিপবোর্ডে কপি করুন
+                    navigator.clipboard.writeText(url).then(function() {
+                        alert('লিঙ্ক ক্লিপবোর্ডে কপি করা হয়েছে!');
+                    });
+                }
+            }
+        });
+    </script>
+</body>
+  </html>
